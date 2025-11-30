@@ -69,6 +69,20 @@ const Index = () => {
     toast.info("Voto removido");
   };
 
+  const handleDeleteCandidate = (candidateId: string) => {
+    setPositions((prev) =>
+      prev.map((position) =>
+        position.id === currentPositionId
+          ? {
+              ...position,
+              candidates: position.candidates.filter((c) => c.id !== candidateId),
+            }
+          : position
+      )
+    );
+    toast.success("Candidato excluído");
+  };
+
   const handleAddCandidate = (name: string) => {
     setPositions((prev) =>
       prev.map((position) =>
@@ -185,6 +199,7 @@ const Index = () => {
                   votes={candidate.votes}
                   onAddVote={() => handleAddVote(candidate.id)}
                   onRemoveVote={() => handleRemoveVote(candidate.id)}
+                  onDelete={() => handleDeleteCandidate(candidate.id)}
                 />
               ))}
             </div>

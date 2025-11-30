@@ -51,6 +51,24 @@ const Index = () => {
     toast.success("Voto registrado com sucesso!");
   };
 
+  const handleRemoveVote = (candidateId: string) => {
+    setPositions((prev) =>
+      prev.map((position) =>
+        position.id === currentPositionId
+          ? {
+              ...position,
+              candidates: position.candidates.map((candidate) =>
+                candidate.id === candidateId && candidate.votes > 0
+                  ? { ...candidate, votes: candidate.votes - 1 }
+                  : candidate
+              ),
+            }
+          : position
+      )
+    );
+    toast.info("Voto removido");
+  };
+
   const handleAddCandidate = (name: string) => {
     setPositions((prev) =>
       prev.map((position) =>
@@ -100,7 +118,7 @@ const Index = () => {
   const totalVotes = currentPosition.candidates.reduce((sum, c) => sum + c.votes, 0);
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
+    <div className="min-h-screen bg-gradient-subtle flex flex-col">
       {/* Header */}
       <header className="bg-card border-b border-border shadow-soft sticky top-0 z-10">
         <div className="container mx-auto px-4 py-6">
@@ -144,15 +162,20 @@ const Index = () => {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-6 flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-foreground">
-            Votação: {currentPosition.name}
-          </h2>
+      <main className="container mx-auto px-4 py-8 flex-1">
+        <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h2 className="text-3xl font-bold text-foreground mb-2">
+              {currentPosition.name}
+            </h2>
+            <p className="text-muted-foreground">
+              Selecione os candidatos para registrar seus votos
+            </p>
+          </div>
           <AddCandidateDialog onAdd={handleAddCandidate} />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {currentPosition.candidates.map((candidate) => (
@@ -161,29 +184,34 @@ const Index = () => {
                   name={candidate.name}
                   votes={candidate.votes}
                   onAddVote={() => handleAddVote(candidate.id)}
+                  onRemoveVote={() => handleRemoveVote(candidate.id)}
                 />
               ))}
             </div>
 
             {currentPosition.candidates.length === 0 && (
-              <div className="text-center py-20 bg-card rounded-lg border border-border">
-                <p className="text-muted-foreground text-lg">
-                  Nenhum candidato adicionado para {currentPosition.name}.<br />
-                  Clique em "Adicionar Candidato" para começar.
+              <div className="text-center py-24 bg-card rounded-xl border-2 border-dashed border-border shadow-soft">
+                <p className="text-muted-foreground text-lg mb-2">
+                  Nenhum candidato adicionado para {currentPosition.name}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Clique em "Adicionar Candidato" para começar
                 </p>
               </div>
             )}
           </div>
 
           <div className="lg:col-span-1">
-            <RankingList candidates={currentPosition.candidates} />
+            <div className="lg:sticky lg:top-24">
+              <RankingList candidates={currentPosition.candidates} />
+            </div>
           </div>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="mt-auto py-6 border-t border-border bg-card">
-        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
+      <footer className="mt-auto py-6 border-t border-border bg-card shadow-soft">
+        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground font-medium">
           Sistema de votação transparente para assembleias
         </div>
       </footer>

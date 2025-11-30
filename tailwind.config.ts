@@ -13,6 +13,10 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ["Inter", "system-ui", "sans-serif"],
+        display: ["Poppins", "Inter", "sans-serif"],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -47,6 +51,18 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        warm: {
+          50: "hsl(32 35% 97%)",
+          100: "hsl(30 40% 94%)",
+          200: "hsl(30 40% 88%)",
+          300: "hsl(28 45% 78%)",
+          400: "hsl(26 60% 65%)",
+          500: "hsl(25 85% 55%)",
+          600: "hsl(23 85% 48%)",
+          700: "hsl(22 80% 40%)",
+          800: "hsl(20 70% 32%)",
+          900: "hsl(25 40% 15%)",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
@@ -62,6 +78,14 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      backgroundImage: {
+        "gradient-warm": "var(--gradient-warm)",
+        "gradient-subtle": "var(--gradient-subtle)",
+      },
+      boxShadow: {
+        soft: "var(--shadow-soft)",
+        elevated: "var(--shadow-elevated)",
       },
       keyframes: {
         "accordion-down": {

@@ -14,17 +14,12 @@ const Index = () => {
       id: "1",
       name: "Diácono",
       candidates: [
-        { id: "1-1", name: "João Silva", votes: 0 },
-        { id: "1-2", name: "Maria Santos", votes: 0 },
-        { id: "1-3", name: "Pedro Oliveira", votes: 0 },
       ],
     },
     {
       id: "2",
       name: "Presbítero",
       candidates: [
-        { id: "2-1", name: "Ana Costa", votes: 0 },
-        { id: "2-2", name: "Carlos Lima", votes: 0 },
       ],
     },
   ]);

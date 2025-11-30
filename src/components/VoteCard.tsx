@@ -21,37 +21,17 @@ interface VoteCardProps {
   onDelete: () => void;
 }
 
-export const VoteCard = ({ name, votes, onAddVote, onRemoveVote, onDelete }: VoteCardProps) => {
+export const VoteCard = ({
+  name,
+  votes,
+  onAddVote,
+  onRemoveVote,
+  onDelete,
+}: VoteCardProps) => {
   return (
-    <Card className="p-6 bg-card border-border hover:shadow-elevated transition-all duration-300 group relative">
-      <AlertDialog>
-        <AlertDialogTrigger asChild>
-          <Button
-            size="icon"
-            variant="ghost"
-            className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10 hover:text-destructive"
-            title="Excluir candidato"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </AlertDialogTrigger>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir <strong>{name}</strong>? Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={onDelete} className="bg-destructive hover:bg-destructive/90">
-              Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <div className="flex items-center justify-between mb-6">
+    <Card className="p-6 bg-card border-border hover:shadow-elevated transition-all duration-300 group relative flex flex-col justify-between">
+      {/* Bloco de Votos e Botões de Ação */}
+      <div className="flex items-center justify-between mb-4">
         <h3 className="text-xl font-semibold text-foreground pr-8">{name}</h3>
         <div className="flex gap-2">
           <Button
@@ -74,13 +54,50 @@ export const VoteCard = ({ name, votes, onAddVote, onRemoveVote, onDelete }: Vot
           </Button>
         </div>
       </div>
-      <div className="text-center py-4">
+
+      {/* Placar de Votos */}
+      <div className="text-center py-4 flex-grow">
         <div className="text-7xl font-bold text-primary mb-3 transition-all duration-300 group-hover:scale-105">
           {votes}
         </div>
         <div className="text-sm text-muted-foreground uppercase tracking-wider font-medium">
           {votes === 1 ? "Voto" : "Votos"}
         </div>
+      </div>
+
+      {/* 🗑️ NOVO: Botão de Excluir no Canto Inferior Direito */}
+      <div className="flex justify-end pt-4">
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              size="sm" // Ajustado para ser menor
+              variant="link" // Mais discreto, como um link/botão secundário
+              className="p-0 h-7 text-destructive/70 hover:text-destructive hover:bg-transparent transition-colors"
+              title="Excluir candidato"
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              Excluir
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja excluir <strong>{name}</strong>? Esta
+                ação não pode ser desfeita.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={onDelete}
+                className="bg-destructive hover:bg-destructive/90"
+              >
+                Excluir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </Card>
   );

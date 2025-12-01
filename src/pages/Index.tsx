@@ -1,13 +1,16 @@
 import { useState } from "react";
 import { VoteCard } from "@/components/VoteCard";
+import { VoteList } from "@/components/VoteList";
 import { AddCandidateDialog } from "@/components/AddCandidateDialog";
 import { RankingList } from "@/components/RankingList";
 import { PositionSelector } from "@/components/PositionSelector";
 import { BiblicalInfoDialog } from "@/components/BiblicalInfoDialog";
 import { Button } from "@/components/ui/button";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, Download, LayoutGrid, List } from "lucide-react";
 import { toast } from "sonner";
 import { Position } from "@/types/election";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const Index = () => {
   const [positions, setPositions] = useState<Position[]>([
@@ -26,6 +29,7 @@ const Index = () => {
   ]);
 
   const [currentPositionId, setCurrentPositionId] = useState(positions[0].id);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   const currentPosition = positions.find((p) => p.id === currentPositionId) || positions[0];
 
@@ -152,6 +156,80 @@ const Index = () => {
     toast.info(`Votação de ${currentPosition.name} reiniciada`);
   };
 
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    
+    // Título
+    doc.setFontSize(20);
+    doc.text("Resultados da Votação", 105, 20, { align: "center" });
+    
+    doc.setFontSize(12);
+    doc.text("Assembleia para Eleição de Cargos", 105, 30, { align: "center" });
+    
+    let yPosition = 45;
+    
+    // Para cada cargo
+    positions.forEach((position, index) => {
+      if (index > 0) yPosition += 10;
+      
+      doc.setFontSize(16);
+      doc.setFont(undefined, "bold");
+      doc.text(position.name, 20, yPosition);
+      yPosition += 5;
+      
+      const sortedCandidates = [...position.candidates].sort((a, b) => b.votes - a.votes);
+      const totalVotesForPosition = sortedCandidates.reduce((sum, c) => sum + c.votes, 0);
+      
+      doc.setFontSize(10);
+      doc.setFont(undefined, "normal");
+      doc.text(`Total de votos: ${totalVotesForPosition}`, 20, yPosition);
+      yPosition += 10;
+      
+      // Tabela de candidatos
+      const tableData = sortedCandidates.map((candidate, idx) => [
+        `${idx + 1}º`,
+        candidate.name,
+        candidate.votes.toString(),
+        totalVotesForPosition > 0 
+          ? `${((candidate.votes / totalVotesForPosition) * 100).toFixed(1)}%`
+          : "0%"
+      ]);
+      
+      autoTable(doc, {
+        startY: yPosition,
+        head: [["Posição", "Candidato", "Votos", "Percentual"]],
+        body: tableData,
+        theme: "grid",
+        headStyles: { fillColor: [237, 108, 2] },
+        margin: { left: 20, right: 20 },
+      });
+      
+      yPosition = (doc as any).lastAutoTable.finalY + 10;
+      
+      // Nova página se necessário
+      if (yPosition > 250 && index < positions.length - 1) {
+        doc.addPage();
+        yPosition = 20;
+      }
+    });
+    
+    // Rodapé
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.text(
+        `Gerado em ${new Date().toLocaleString("pt-BR")}`,
+        105,
+        doc.internal.pageSize.height - 10,
+        { align: "center" }
+      );
+    }
+    
+    doc.save(`votacao-${new Date().toISOString().split("T")[0]}.pdf`);
+    toast.success("PDF exportado com sucesso!");
+  };
+
   const totalVotes = currentPosition.candidates.reduce((sum, c) => sum + c.votes, 0);
 
   return (
@@ -176,6 +254,15 @@ const Index = () => {
                     Total de Votos
                   </div>
                 </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleExportPDF}
+                  className="hover:bg-primary/10 hover:text-primary hover:border-primary/20"
+                  title="Exportar resultados em PDF"
+                >
+                  <Download className="h-4 w-4" />
+                </Button>
                 <Button
                   variant="outline"
                   size="icon"
@@ -213,24 +300,56 @@ const Index = () => {
               Selecione os candidatos para registrar seus votos
             </p>
           </div>
-          <AddCandidateDialog onAdd={handleAddCandidate} />
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 border border-border rounded-lg p-1">
+              <Button
+                size="icon"
+                variant={viewMode === "grid" ? "default" : "ghost"}
+                onClick={() => setViewMode("grid")}
+                className="h-8 w-8"
+                title="Visualização em quadros"
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </Button>
+              <Button
+                size="icon"
+                variant={viewMode === "list" ? "default" : "ghost"}
+                onClick={() => setViewMode("list")}
+                className="h-8 w-8"
+                title="Visualização em lista"
+              >
+                <List className="h-4 w-4" />
+              </Button>
+            </div>
+            <AddCandidateDialog onAdd={handleAddCandidate} />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {currentPosition.candidates.map((candidate) => (
-                <VoteCard
-                  key={candidate.id}
-                  name={candidate.name}
-                  votes={candidate.votes}
-                  onAddVote={() => handleAddVote(candidate.id)}
-                  onRemoveVote={() => handleRemoveVote(candidate.id)}
-                  onDelete={() => handleDeleteCandidate(candidate.id)}
-                  onEdit={(newName) => handleEditCandidate(candidate.id, newName)}
-                />
-              ))}
-            </div>
+            {viewMode === "grid" ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {currentPosition.candidates.map((candidate) => (
+                  <VoteCard
+                    key={candidate.id}
+                    name={candidate.name}
+                    votes={candidate.votes}
+                    onAddVote={() => handleAddVote(candidate.id)}
+                    onRemoveVote={() => handleRemoveVote(candidate.id)}
+                    onDelete={() => handleDeleteCandidate(candidate.id)}
+                    onEdit={(newName) => handleEditCandidate(candidate.id, newName)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <VoteList
+                candidates={currentPosition.candidates}
+                onAddVote={handleAddVote}
+                onRemoveVote={handleRemoveVote}
+                onDelete={handleDeleteCandidate}
+                onEdit={handleEditCandidate}
+              />
+            )}
 
             {currentPosition.candidates.length === 0 && (
               <div className="text-center py-24 bg-card rounded-xl border-2 border-dashed border-border shadow-soft">

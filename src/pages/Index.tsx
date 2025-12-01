@@ -3,6 +3,7 @@ import { VoteCard } from "@/components/VoteCard";
 import { AddCandidateDialog } from "@/components/AddCandidateDialog";
 import { RankingList } from "@/components/RankingList";
 import { PositionSelector } from "@/components/PositionSelector";
+import { BiblicalInfoDialog } from "@/components/BiblicalInfoDialog";
 import { Button } from "@/components/ui/button";
 import { RotateCcw } from "lucide-react";
 import { toast } from "sonner";
@@ -110,6 +111,33 @@ const Index = () => {
     toast.success(`Cargo "${name}" criado com sucesso`);
   };
 
+  const handleEditPosition = (positionId: string, newName: string) => {
+    setPositions((prev) =>
+      prev.map((position) =>
+        position.id === positionId ? { ...position, name: newName } : position
+      )
+    );
+    toast.success("Cargo renomeado com sucesso");
+  };
+
+  const handleEditCandidate = (candidateId: string, newName: string) => {
+    setPositions((prev) =>
+      prev.map((position) =>
+        position.id === currentPositionId
+          ? {
+              ...position,
+              candidates: position.candidates.map((candidate) =>
+                candidate.id === candidateId
+                  ? { ...candidate, name: newName }
+                  : candidate
+              ),
+            }
+          : position
+      )
+    );
+    toast.success("Nome atualizado com sucesso");
+  };
+
   const handleReset = () => {
     setPositions((prev) =>
       prev.map((position) =>
@@ -165,6 +193,7 @@ const Index = () => {
               currentPosition={currentPosition}
               onSelectPosition={setCurrentPositionId}
               onAddPosition={handleAddPosition}
+              onEditPosition={handleEditPosition}
             />
           </div>
         </div>
@@ -174,9 +203,12 @@ const Index = () => {
       <main className="container mx-auto px-4 py-8 flex-1">
         <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h2 className="text-3xl font-bold text-foreground mb-2">
-              {currentPosition.name}
-            </h2>
+            <div className="flex items-center gap-3 mb-2">
+              <h2 className="text-3xl font-bold text-foreground">
+                {currentPosition.name}
+              </h2>
+              <BiblicalInfoDialog positionName={currentPosition.name} />
+            </div>
             <p className="text-muted-foreground">
               Selecione os candidatos para registrar seus votos
             </p>
@@ -195,6 +227,7 @@ const Index = () => {
                   onAddVote={() => handleAddVote(candidate.id)}
                   onRemoveVote={() => handleRemoveVote(candidate.id)}
                   onDelete={() => handleDeleteCandidate(candidate.id)}
+                  onEdit={(newName) => handleEditCandidate(candidate.id, newName)}
                 />
               ))}
             </div>

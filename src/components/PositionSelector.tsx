@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Briefcase } from "lucide-react";
+import { Plus, Briefcase, Edit2, Check, X } from "lucide-react";
 import { Position } from "@/types/election";
 import { useState } from "react";
 
@@ -12,6 +12,7 @@ interface PositionSelectorProps {
   currentPosition: Position;
   onSelectPosition: (positionId: string) => void;
   onAddPosition: (name: string) => void;
+  onEditPosition: (positionId: string, newName: string) => void;
 }
 
 export const PositionSelector = ({
@@ -19,9 +20,12 @@ export const PositionSelector = ({
   currentPosition,
   onSelectPosition,
   onAddPosition,
+  onEditPosition,
 }: PositionSelectorProps) => {
   const [open, setOpen] = useState(false);
   const [newPositionName, setNewPositionName] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editedName, setEditedName] = useState("");
 
   const handleAddPosition = (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,6 +34,24 @@ export const PositionSelector = ({
       setNewPositionName("");
       setOpen(false);
     }
+  };
+
+  const handleStartEdit = (position: Position) => {
+    setEditingId(position.id);
+    setEditedName(position.name);
+  };
+
+  const handleSaveEdit = (positionId: string) => {
+    if (editedName.trim() && editedName !== positions.find(p => p.id === positionId)?.name) {
+      onEditPosition(positionId, editedName.trim());
+    }
+    setEditingId(null);
+    setEditedName("");
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditedName("");
   };
 
   return (
@@ -42,21 +64,65 @@ export const PositionSelector = ({
       {positions.map((position) => {
         const totalVotes = position.candidates.reduce((sum, c) => sum + c.votes, 0);
         const isActive = position.id === currentPosition.id;
+        const isEditing = editingId === position.id;
+        
+        if (isEditing) {
+          return (
+            <div key={position.id} className="flex items-center gap-1 border border-border rounded-md p-1 bg-background">
+              <Input
+                value={editedName}
+                onChange={(e) => setEditedName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSaveEdit(position.id);
+                  if (e.key === "Escape") handleCancelEdit();
+                }}
+                className="h-8 text-sm"
+                autoFocus
+              />
+              <Button
+                onClick={() => handleSaveEdit(position.id)}
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
+              >
+                <Check className="h-4 w-4" />
+              </Button>
+              <Button
+                onClick={handleCancelEdit}
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          );
+        }
         
         return (
-          <Button
-            key={position.id}
-            variant={isActive ? "default" : "outline"}
-            onClick={() => onSelectPosition(position.id)}
-            className={isActive ? "bg-gradient-warm" : ""}
-          >
-            {position.name}
-            {totalVotes > 0 && (
-              <Badge variant="secondary" className="ml-2 bg-background/20">
-                {totalVotes}
-              </Badge>
-            )}
-          </Button>
+          <div key={position.id} className="group/pos relative">
+            <Button
+              variant={isActive ? "default" : "outline"}
+              onClick={() => onSelectPosition(position.id)}
+              className={isActive ? "bg-gradient-warm" : ""}
+            >
+              {position.name}
+              {totalVotes > 0 && (
+                <Badge variant="secondary" className="ml-2 bg-background/20">
+                  {totalVotes}
+                </Badge>
+              )}
+            </Button>
+            <Button
+              onClick={() => handleStartEdit(position)}
+              size="icon"
+              variant="ghost"
+              className="h-6 w-6 absolute -top-2 -right-2 opacity-0 group-hover/pos:opacity-100 transition-opacity bg-background border border-border"
+              title="Editar cargo"
+            >
+              <Edit2 className="h-3 w-3" />
+            </Button>
+          </div>
         );
       })}
 

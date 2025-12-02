@@ -83,7 +83,7 @@ export const PositionSelector = ({
                 onClick={() => handleSaveEdit(position.id)}
                 size="icon"
                 variant="ghost"
-                className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
+                className="h-8 w-8 text-accent hover:text-accent hover:bg-accent/20"
               >
                 <Check className="h-4 w-4" />
               </Button>
@@ -100,7 +100,7 @@ export const PositionSelector = ({
         }
         
         return (
-          <div key={position.id} className="group/pos relative">
+          <div key={position.id} className="relative inline-flex items-center gap-2">
             <Button
               variant={isActive ? "default" : "outline"}
               onClick={() => onSelectPosition(position.id)}
@@ -117,10 +117,10 @@ export const PositionSelector = ({
               onClick={() => handleStartEdit(position)}
               size="icon"
               variant="ghost"
-              className="h-6 w-6 absolute -top-2 -right-2 opacity-0 group-hover/pos:opacity-100 transition-opacity bg-background border border-border"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-accent/10 transition-all"
               title="Editar cargo"
             >
-              <Edit2 className="h-3 w-3" />
+              <Edit2 className="h-4 w-4" />
             </Button>
           </div>
         );

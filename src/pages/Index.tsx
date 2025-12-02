@@ -6,13 +6,15 @@ import { RankingList } from "@/components/RankingList";
 import { PositionSelector } from "@/components/PositionSelector";
 import { BiblicalInfoDialog } from "@/components/BiblicalInfoDialog";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, Download, LayoutGrid, List } from "lucide-react";
+import { RotateCcw, Download, LayoutGrid, List, Moon, Sun } from "lucide-react";
 import { toast } from "sonner";
 import { Position } from "@/types/election";
+import { useTheme } from "next-themes";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 const Index = () => {
+  const { theme, setTheme } = useTheme();
   const [positions, setPositions] = useState<Position[]>([
     {
       id: "1",
@@ -254,6 +256,15 @@ const Index = () => {
                     Total de Votos
                   </div>
                 </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                  className="hover:bg-accent/10 hover:text-accent hover:border-accent/20"
+                  title="Alternar tema"
+                >
+                  {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                </Button>
                 <Button
                   variant="outline"
                   size="icon"

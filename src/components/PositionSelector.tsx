@@ -100,11 +100,11 @@ export const PositionSelector = ({
         }
         
         return (
-          <div key={position.id} className="relative inline-flex items-center gap-2">
+          <div key={position.id} className="relative group/position">
             <Button
               variant={isActive ? "default" : "outline"}
               onClick={() => onSelectPosition(position.id)}
-              className={isActive ? "bg-gradient-warm" : ""}
+              className={`${isActive ? "bg-gradient-warm" : ""} pr-9`}
             >
               {position.name}
               {totalVotes > 0 && (
@@ -113,15 +113,16 @@ export const PositionSelector = ({
                 </Badge>
               )}
             </Button>
-            <Button
-              onClick={() => handleStartEdit(position)}
-              size="icon"
-              variant="ghost"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-accent/10 transition-all"
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleStartEdit(position);
+              }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover/position:opacity-100 transition-opacity p-1 hover:bg-background/10 rounded"
               title="Editar cargo"
             >
-              <Edit2 className="h-4 w-4" />
-            </Button>
+              <Edit2 className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
+            </button>
           </div>
         );
       })}

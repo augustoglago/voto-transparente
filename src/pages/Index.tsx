@@ -7,6 +7,17 @@ import { PositionSelector } from "@/components/PositionSelector";
 import { BiblicalInfoDialog } from "@/components/BiblicalInfoDialog";
 import { Button } from "@/components/ui/button";
 import { RotateCcw, Download, LayoutGrid, List, Moon, Sun } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { Position } from "@/types/election";
 import { useTheme } from "next-themes";
@@ -274,15 +285,35 @@ const Index = () => {
                 >
                   <Download className="h-4 w-4" />
                 </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleReset}
-                  className="hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20"
-                  title="Resetar votação atual"
-                >
-                  <RotateCcw className="h-4 w-4" />
-                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20"
+                      title="Resetar votação atual"
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Confirmar reset</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Tem certeza que deseja zerar todos os votos de <strong>{currentPosition.name}</strong>? Esta ação não pode ser desfeita.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleReset}
+                        className="bg-destructive hover:bg-destructive/90"
+                      >
+                        Resetar
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </div>
             

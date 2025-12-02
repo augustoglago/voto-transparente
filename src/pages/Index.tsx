@@ -338,7 +338,16 @@ const Index = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
-            {viewMode === "grid" ? (
+            {currentPosition.candidates.length === 0 ? (
+              <div className="text-center py-24 bg-card rounded-xl border-2 border-dashed border-border shadow-soft">
+                <p className="text-muted-foreground text-lg mb-2">
+                  Nenhum candidato adicionado para {currentPosition.name}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Clique em "Adicionar Candidato" para começar
+                </p>
+              </div>
+            ) : viewMode === "grid" ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {currentPosition.candidates.map((candidate) => (
                   <VoteCard
@@ -360,17 +369,6 @@ const Index = () => {
                 onDelete={handleDeleteCandidate}
                 onEdit={handleEditCandidate}
               />
-            )}
-
-            {currentPosition.candidates.length === 0 && (
-              <div className="text-center py-24 bg-card rounded-xl border-2 border-dashed border-border shadow-soft">
-                <p className="text-muted-foreground text-lg mb-2">
-                  Nenhum candidato adicionado para {currentPosition.name}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Clique em "Adicionar Candidato" para começar
-                </p>
-              </div>
             )}
           </div>
 

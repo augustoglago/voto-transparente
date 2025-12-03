@@ -117,7 +117,7 @@ export const PositionSelector = ({
                   e.stopPropagation();
                   handleStartEdit(position);
                 }}
-                className="absolute top-1 right-1 p-0.5 rounded opacity-0 group-hover/position:opacity-100 transition-opacity hover:bg-background/20 cursor-pointer"
+                className="absolute top-1 right-1 p-1 rounded-sm opacity-0 group-hover/position:opacity-70 hover:opacity-100 transition-all cursor-pointer"
                 title="Editar cargo"
               >
                 <Edit2 className="h-3 w-3" />

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,12 +27,13 @@ export const AddCandidateDialog = ({ onAdd }: AddCandidateDialogProps) => {
       <DialogTrigger asChild>
         <Button className="bg-gradient-warm hover:opacity-90 transition-opacity">
           <UserPlus className="mr-2 h-4 w-4" />
-          Adicionar Candidato
+          Adicionar candidato
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Adicionar Novo Candidato</DialogTitle>
+          <DialogDescription>Cadastre um candidato para o cargo selecionado.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -43,9 +44,12 @@ export const AddCandidateDialog = ({ onAdd }: AddCandidateDialogProps) => {
               onChange={(e) => setName(e.target.value)}
               placeholder="Digite o nome completo"
               className="mt-2"
+              maxLength={100}
+              autoFocus
+              required
             />
           </div>
-          <Button type="submit" className="w-full bg-gradient-warm hover:opacity-90">
+          <Button type="submit" disabled={!name.trim()} className="w-full bg-gradient-warm hover:opacity-90">
             Adicionar
           </Button>
         </form>

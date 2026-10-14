@@ -1,8 +1,10 @@
-import { Info } from "lucide-react";
+import { BookOpen } from "lucide-react";
+import { normalizeName } from "@/lib/election";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -52,7 +54,8 @@ const biblicalInfo: Record<string, { title: string; verses: string; requirements
 };
 
 export const BiblicalInfoDialog = ({ positionName }: BiblicalInfoDialogProps) => {
-  const info = biblicalInfo[positionName];
+  const key = Object.keys(biblicalInfo).find(name => normalizeName(name) === normalizeName(positionName));
+  const info = key ? biblicalInfo[key] : undefined;
 
   if (!info) return null;
 
@@ -60,18 +63,19 @@ export const BiblicalInfoDialog = ({ positionName }: BiblicalInfoDialogProps) =>
     <Dialog>
       <DialogTrigger asChild>
         <Button
-          variant="outline"
+          variant="ghost"
           size="sm"
-          className="gap-2"
+          className="h-7 gap-1.5 px-2 text-xs text-muted-foreground"
           title="Ver características bíblicas"
         >
-          <Info className="h-4 w-4" />
-          Requisitos Bíblicos
+          <BookOpen className="h-3.5 w-3.5" />
+          Referência bíblica
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>{info.title}</DialogTitle>
+          <DialogDescription>Qualificações para o serviço na igreja.</DialogDescription>
         </DialogHeader>
         <ScrollArea className="max-h-[60vh] pr-4">
           <div className="space-y-6">

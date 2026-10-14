@@ -1,108 +1,11 @@
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Trophy, Medal, Award } from "lucide-react";
+import { Trophy, ArrowUpRight, ChartNoAxesColumnIncreasing } from "lucide-react";
 import { Candidate } from "@/types/election";
-
-interface RankingListProps {
-  candidates: Candidate[];
-}
-
-export const RankingList = ({ candidates }: RankingListProps) => {
-  const sortedCandidates = [...candidates].sort((a, b) => b.votes - a.votes);
-  
-  // Detectar empates
-  const getTiedCandidates = (votes: number) => {
-    return sortedCandidates.filter(c => c.votes === votes).length;
-  };
-
-  const getRankIcon = (index: number, votes: number) => {
-    if (votes === 0) return null;
-    
-    const tiedCount = getTiedCandidates(votes);
-    const isTied = tiedCount > 1;
-    
-    if (index === 0) {
-      return (
-        <div className="flex items-center gap-2">
-          <Trophy className="h-6 w-6 text-primary" />
-          {isTied && <Badge variant="secondary" className="bg-accent/20 text-accent-foreground">Empate</Badge>}
-        </div>
-      );
-    }
-    if (index === 1) {
-      return (
-        <div className="flex items-center gap-2">
-          <Medal className="h-6 w-6 text-warm-600" />
-          {isTied && <Badge variant="secondary" className="bg-accent/20 text-accent-foreground">Empate</Badge>}
-        </div>
-      );
-    }
-    if (index === 2) {
-      return (
-        <div className="flex items-center gap-2">
-          <Award className="h-6 w-6 text-warm-400" />
-          {isTied && <Badge variant="secondary" className="bg-accent/20 text-accent-foreground">Empate</Badge>}
-        </div>
-      );
-    }
-    
-    if (isTied) {
-      return <Badge variant="secondary" className="bg-accent/20 text-accent-foreground">Empate</Badge>;
-    }
-    
-    return null;
-  };
-
-  return (
-    <Card className="p-6 bg-card border-border shadow-elevated">
-      <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-2">
-        <Trophy className="h-6 w-6 text-primary" />
-        Ranking de Votos
-      </h2>
-      
-      {sortedCandidates.length === 0 ? (
-        <p className="text-muted-foreground text-center py-8">
-          Nenhum candidato na votação
-        </p>
-      ) : (
-        <div className="space-y-3">
-          {sortedCandidates.map((candidate, index) => {
-            const position = index + 1;
-            const icon = getRankIcon(index, candidate.votes);
-            
-            return (
-              <div
-                key={candidate.id}
-                className={`flex items-center justify-between p-4 rounded-lg transition-colors ${
-                  index === 0 && candidate.votes > 0
-                    ? "bg-primary/5 border-2 border-primary/20"
-                    : "bg-muted/30 border border-border"
-                }`}
-              >
-                <div className="flex items-center gap-4 flex-1">
-                  <div className="text-2xl font-bold text-muted-foreground w-8 text-center">
-                    {position}º
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-semibold text-foreground text-lg">
-                      {candidate.name}
-                    </div>
-                  </div>
-                  {icon && <div className="flex items-center">{icon}</div>}
-                </div>
-                <div className="text-right ml-4">
-                  <div className="text-3xl font-bold text-primary">
-                    {candidate.votes}
-                  </div>
-                  <div className="text-xs text-muted-foreground uppercase tracking-wider">
-                    {candidate.votes === 1 ? "voto" : "votos"}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </Card>
-  );
+import { rankCandidates } from "@/lib/election";
+import { Progress } from "@/components/ui/progress";
+export const RankingList = ({ candidates }: { candidates: Candidate[] }) => {
+  const ranked = rankCandidates(candidates);
+  const total = candidates.reduce((sum, c) => sum + c.votes, 0);
+  return <aside className="ranking-panel"><div className="flex items-center justify-between"><h2 className="flex items-center gap-2.5 font-semibold"><Trophy className="h-4 w-4 text-primary" />Ranking de votos</h2><ArrowUpRight className="h-4 w-4 text-muted-foreground" /></div><p className="mt-2 text-xs text-muted-foreground">Apuração do cargo selecionado</p>
+    {ranked.length === 0 ? <div className="flex min-h-56 flex-col items-center justify-center text-center"><ChartNoAxesColumnIncreasing className="mb-4 h-9 w-9 text-muted-foreground/40" strokeWidth={1.3} /><p className="text-sm font-medium">Aguardando candidatos</p><p className="mt-1 text-xs text-muted-foreground">Os resultados aparecerão aqui.</p></div> : <ol className="mt-6 space-y-5">{ranked.map(c => <li key={c.id}><div className="mb-2 flex items-center gap-3"><span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-xs font-semibold ${c.rank === 1 ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>{c.rank ? `${c.rank}º` : "—"}</span><div className="min-w-0 flex-1"><p className="break-words text-sm font-medium">{c.name}</p>{c.tied && <span className="text-xs text-primary">Empate</span>}</div><div className="text-right"><span className="text-sm font-semibold tabular-nums">{c.votes}</span><p className="text-xs text-muted-foreground">{total ? (c.votes / total * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) : 0}%</p></div></div><Progress value={total ? c.votes / total * 100 : 0} className="h-1.5 bg-muted" /></li>)}</ol>}
+    <div className="mt-6 flex justify-between border-t border-border pt-4 text-xs text-muted-foreground"><span>Total contabilizado</span><span className="font-semibold text-foreground">{total} {total === 1 ? "voto" : "votos"}</span></div></aside>;
 };

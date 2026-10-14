@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { VoteCard } from "@/components/VoteCard";
 import { VoteList } from "@/components/VoteList";
 import { AddCandidateDialog } from "@/components/AddCandidateDialog";
@@ -6,46 +6,27 @@ import { RankingList } from "@/components/RankingList";
 import { PositionSelector } from "@/components/PositionSelector";
 import { BiblicalInfoDialog } from "@/components/BiblicalInfoDialog";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, Download, LayoutGrid, List, Moon, Sun } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { Vote, RotateCcw, Download, LayoutGrid, List, Moon, Sun, UsersRound, BriefcaseBusiness, ChartNoAxesColumnIncreasing, ShieldCheck, ArrowRight, Info } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { Position } from "@/types/election";
 import { useTheme } from "next-themes";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import { normalizeName, rankCandidates } from "@/lib/election";
+import { exportResults } from "@/lib/export-results";
 
 const Index = () => {
-  const { theme, setTheme } = useTheme();
-  const [positions, setPositions] = useState<Position[]>([
-    {
-      id: "1",
-      name: "Diácono",
-      candidates: [
-      ],
-    },
-    {
-      id: "2",
-      name: "Presbítero",
-      candidates: [
-      ],
-    },
-  ]);
-
-  const [currentPositionId, setCurrentPositionId] = useState(positions[0].id);
+  const { resolvedTheme, setTheme } = useTheme();
+  const [positions, setPositions] = useState<Position[]>([{ id: "1", name: "Diácono", candidates: [] }, { id: "2", name: "Presbítero", candidates: [] }]);
+  const [currentPositionId, setCurrentPositionId] = useState("1");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-
-  const currentPosition = positions.find((p) => p.id === currentPositionId) || positions[0];
-
+  const currentPosition = positions.find(p => p.id === currentPositionId) || positions[0];
+  const hasData = positions.some(p => p.candidates.length > 0);
+  useEffect(() => {
+    if (!hasData) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [hasData]);
   const handleAddVote = (candidateId: string) => {
     setPositions((prev) =>
       prev.map((position) =>
@@ -97,6 +78,7 @@ const Index = () => {
   };
 
   const handleAddCandidate = (name: string) => {
+    if (currentPosition.candidates.some(c => normalizeName(c.name) === normalizeName(name))) { toast.error("Já existe um candidato com esse nome neste cargo."); return; }
     setPositions((prev) =>
       prev.map((position) =>
         position.id === currentPositionId
@@ -105,7 +87,7 @@ const Index = () => {
               candidates: [
                 ...position.candidates,
                 {
-                  id: `${currentPositionId}-${Date.now()}`,
+                  id: crypto.randomUUID(),
                   name,
                   votes: 0,
                 },
@@ -118,8 +100,9 @@ const Index = () => {
   };
 
   const handleAddPosition = (name: string) => {
+    if (positions.some(p => normalizeName(p.name) === normalizeName(name))) { toast.error("Já existe um cargo com esse nome."); return; }
     const newPosition: Position = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       name,
       candidates: [],
     };
@@ -129,6 +112,7 @@ const Index = () => {
   };
 
   const handleEditPosition = (positionId: string, newName: string) => {
+    if (!newName.trim() || positions.some(p => p.id !== positionId && normalizeName(p.name) === normalizeName(newName))) { toast.error("Escolha um nome de cargo diferente."); return; }
     setPositions((prev) =>
       prev.map((position) =>
         position.id === positionId ? { ...position, name: newName } : position
@@ -138,6 +122,7 @@ const Index = () => {
   };
 
   const handleEditCandidate = (candidateId: string, newName: string) => {
+    if (!newName.trim() || currentPosition.candidates.some(c => c.id !== candidateId && normalizeName(c.name) === normalizeName(newName))) { toast.error("Escolha um nome de candidato diferente."); return; }
     setPositions((prev) =>
       prev.map((position) =>
         position.id === currentPositionId
@@ -169,256 +154,20 @@ const Index = () => {
     toast.info(`Votação de ${currentPosition.name} reiniciada`);
   };
 
-  const handleExportPDF = () => {
-    const doc = new jsPDF();
-    
-    // Título
-    doc.setFontSize(20);
-    doc.text("Resultados da Votação", 105, 20, { align: "center" });
-    
-    doc.setFontSize(12);
-    doc.text("Assembleia para Eleição de Cargos", 105, 30, { align: "center" });
-    
-    let yPosition = 45;
-    
-    // Para cada cargo
-    positions.forEach((position, index) => {
-      if (index > 0) yPosition += 10;
-      
-      doc.setFontSize(16);
-      doc.setFont(undefined, "bold");
-      doc.text(position.name, 20, yPosition);
-      yPosition += 5;
-      
-      const sortedCandidates = [...position.candidates].sort((a, b) => b.votes - a.votes);
-      const totalVotesForPosition = sortedCandidates.reduce((sum, c) => sum + c.votes, 0);
-      
-      doc.setFontSize(10);
-      doc.setFont(undefined, "normal");
-      doc.text(`Total de votos: ${totalVotesForPosition}`, 20, yPosition);
-      yPosition += 10;
-      
-      // Tabela de candidatos
-      const tableData = sortedCandidates.map((candidate, idx) => [
-        `${idx + 1}º`,
-        candidate.name,
-        candidate.votes.toString(),
-        totalVotesForPosition > 0 
-          ? `${((candidate.votes / totalVotesForPosition) * 100).toFixed(1)}%`
-          : "0%"
-      ]);
-      
-      autoTable(doc, {
-        startY: yPosition,
-        head: [["Posição", "Candidato", "Votos", "Percentual"]],
-        body: tableData,
-        theme: "grid",
-        headStyles: { fillColor: [237, 108, 2] },
-        margin: { left: 20, right: 20 },
-      });
-      
-      yPosition = (doc as any).lastAutoTable.finalY + 10;
-      
-      // Nova página se necessário
-      if (yPosition > 250 && index < positions.length - 1) {
-        doc.addPage();
-        yPosition = 20;
-      }
-    });
-    
-    // Rodapé
-    const pageCount = doc.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      doc.setFontSize(8);
-      doc.text(
-        `Gerado em ${new Date().toLocaleString("pt-BR")}`,
-        105,
-        doc.internal.pageSize.height - 10,
-        { align: "center" }
-      );
-    }
-    
-    doc.save(`votacao-${new Date().toISOString().split("T")[0]}.pdf`);
-    toast.success("PDF exportado com sucesso!");
-  };
 
   const totalVotes = currentPosition.candidates.reduce((sum, c) => sum + c.votes, 0);
-
-  return (
-    <div className="min-h-screen bg-gradient-subtle flex flex-col">
-      {/* Header */}
-      <header className="bg-card border-b border-border shadow-soft sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-              <div>
-                <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
-                  Sistema de Votação
-                </h1>
-                <p className="text-muted-foreground">
-                  Assembleia para Eleição de Cargos
-                </p>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="text-center px-6 py-3 bg-primary/10 rounded-lg border border-primary/20">
-                  <div className="text-3xl font-bold text-primary">{totalVotes}</div>
-                  <div className="text-xs text-muted-foreground uppercase tracking-wider">
-                    Total de Votos
-                  </div>
-                </div>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                  className="hover:bg-accent/10 hover:text-accent hover:border-accent/20"
-                  title="Alternar tema"
-                >
-                  {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleExportPDF}
-                  className="hover:bg-primary/10 hover:text-primary hover:border-primary/20"
-                  title="Exportar resultados em PDF"
-                >
-                  <Download className="h-4 w-4" />
-                </Button>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20"
-                      title="Resetar votação atual"
-                    >
-                      <RotateCcw className="h-4 w-4" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Confirmar reset</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Tem certeza que deseja zerar todos os votos de <strong>{currentPosition.name}</strong>? Esta ação não pode ser desfeita.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={handleReset}
-                        className="bg-destructive hover:bg-destructive/90"
-                      >
-                        Resetar
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            </div>
-            
-            <PositionSelector
-              positions={positions}
-              currentPosition={currentPosition}
-              onSelectPosition={setCurrentPositionId}
-              onAddPosition={handleAddPosition}
-              onEditPosition={handleEditPosition}
-            />
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8 flex-1">
-        <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <h2 className="text-3xl font-bold text-foreground">
-                {currentPosition.name}
-              </h2>
-              <BiblicalInfoDialog positionName={currentPosition.name} />
-            </div>
-            <p className="text-muted-foreground">
-              Selecione os candidatos para registrar seus votos
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1 border border-border rounded-lg p-1">
-              <Button
-                size="icon"
-                variant={viewMode === "grid" ? "default" : "ghost"}
-                onClick={() => setViewMode("grid")}
-                className="h-8 w-8"
-                title="Visualização em quadros"
-              >
-                <LayoutGrid className="h-4 w-4" />
-              </Button>
-              <Button
-                size="icon"
-                variant={viewMode === "list" ? "default" : "ghost"}
-                onClick={() => setViewMode("list")}
-                className="h-8 w-8"
-                title="Visualização em lista"
-              >
-                <List className="h-4 w-4" />
-              </Button>
-            </div>
-            <AddCandidateDialog onAdd={handleAddCandidate} />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            {currentPosition.candidates.length === 0 ? (
-              <div className="text-center py-24 bg-card rounded-xl border-2 border-dashed border-border shadow-soft">
-                <p className="text-muted-foreground text-lg mb-2">
-                  Nenhum candidato adicionado para {currentPosition.name}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Clique em "Adicionar Candidato" para começar
-                </p>
-              </div>
-            ) : viewMode === "grid" ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {currentPosition.candidates.map((candidate) => (
-                  <VoteCard
-                    key={candidate.id}
-                    name={candidate.name}
-                    votes={candidate.votes}
-                    onAddVote={() => handleAddVote(candidate.id)}
-                    onRemoveVote={() => handleRemoveVote(candidate.id)}
-                    onDelete={() => handleDeleteCandidate(candidate.id)}
-                    onEdit={(newName) => handleEditCandidate(candidate.id, newName)}
-                  />
-                ))}
-              </div>
-            ) : (
-              <VoteList
-                candidates={currentPosition.candidates}
-                onAddVote={handleAddVote}
-                onRemoveVote={handleRemoveVote}
-                onDelete={handleDeleteCandidate}
-                onEdit={handleEditCandidate}
-              />
-            )}
-          </div>
-
-          <div className="lg:col-span-1">
-            <div className="lg:sticky lg:top-24">
-              <RankingList candidates={currentPosition.candidates} />
-            </div>
-          </div>
-        </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="mt-auto py-6 border-t border-border bg-card shadow-soft">
-        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground font-medium">
-          Sistema de votação transparente para assembleias
-        </div>
-      </footer>
-    </div>
-  );
+  const ties = new Set(rankCandidates(currentPosition.candidates).filter(c => c.tied).map(c => c.votes)).size;
+  const exportPDF = () => { try { exportResults(positions); toast.success("Resultados exportados em PDF."); } catch { toast.error("Não foi possível exportar. Tente novamente."); } };
+  return <div className="flex min-h-screen flex-col bg-background">
+    <header className="border-b border-border bg-card"><div className="app-shell flex min-h-20 flex-wrap items-center justify-between gap-4 py-4"><a href="/" className="flex items-center gap-3" aria-label="Assembleia, início"><div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground"><Vote size={23} strokeWidth={1.7} /></div><div><span className="block text-lg font-semibold">assembleia<span className="text-primary">.</span></span><span className="block text-[11px] text-muted-foreground">Unidos em cada decisão</span></div></a><div className="flex items-center gap-2"><span className="mr-4 hidden items-center gap-1.5 text-xs text-muted-foreground sm:flex"><ShieldCheck className="h-3.5 w-3.5" />Transparência na apuração</span><Button variant="ghost" size="icon" title="Alternar tema" aria-label="Alternar tema" onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}>{resolvedTheme === "dark" ? <Sun /> : <Moon />}</Button><span className="mx-1 h-5 border-l border-border" /><Button variant="outline" onClick={exportPDF}><Download />Exportar PDF</Button></div></div></header>
+    <main className="app-shell flex-1 pb-12 pt-9 page-enter">
+      <div className="flex flex-wrap items-start justify-between gap-4"><div><div className="eyebrow mb-3">ELEIÇÃO DE CARGOS · ASSEMBLEIA DA IGREJA</div><h1 className="text-3xl font-semibold leading-tight sm:text-4xl">Cada voto, uma decisão em comunhão.</h1><p className="mt-3 text-sm text-muted-foreground">Assembleia para eleição de cargos</p></div><div className="mt-1 flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary"><span className="h-1.5 w-1.5 rounded-full bg-primary" />Apuração</div></div>
+      <div className="my-8 grid grid-cols-2 divide-x divide-border border-y border-border lg:grid-cols-4"><div className="stat pr-3"><span className="stat-icon"><Vote size={19} /></span><div><p className="eyebrow">Votos neste cargo</p><p className="mt-1 text-2xl font-semibold tabular-nums">{totalVotes.toLocaleString("pt-BR")}</p></div></div><div className="stat pl-5"><span className="stat-icon"><UsersRound size={19} /></span><div><p className="eyebrow">Candidatos</p><p className="mt-1 text-2xl font-semibold">{currentPosition.candidates.length}</p></div></div><div className="stat !border-l-0 pr-3 lg:!border-l lg:pl-5"><span className="stat-icon"><BriefcaseBusiness size={19} /></span><div><p className="eyebrow">Cargos em votação</p><p className="mt-1 text-2xl font-semibold">{positions.length}</p></div></div><div className="stat pl-5"><span className="stat-icon"><ChartNoAxesColumnIncreasing size={19} /></span><div><p className="eyebrow">Grupos em empate</p><p className="mt-1 text-2xl font-semibold">{ties}</p></div></div></div>
+      <PositionSelector positions={positions} currentPosition={currentPosition} onSelectPosition={setCurrentPositionId} onAddPosition={handleAddPosition} onEditPosition={handleEditPosition} />
+      <div className="mt-7 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_350px]"><section className="min-w-0"><div className="mb-6 flex flex-wrap items-center justify-between gap-4"><div><div className="flex flex-wrap items-center gap-3"><h2 className="break-words text-xl font-semibold">{currentPosition.name}</h2><BiblicalInfoDialog positionName={currentPosition.name} /></div><p className="mt-2 text-xs text-muted-foreground">{currentPosition.candidates.length} candidatos · {totalVotes} votos contabilizados</p></div><div className="flex flex-wrap items-center gap-2"><div className="flex gap-1 rounded-lg border border-border bg-card p-1"><Button size="icon" variant={viewMode === "grid" ? "secondary" : "ghost"} className="h-8 w-8" title="Visualização em quadros" aria-label="Visualização em quadros" aria-pressed={viewMode === "grid"} onClick={() => setViewMode("grid")}><LayoutGrid /></Button><Button size="icon" variant={viewMode === "list" ? "secondary" : "ghost"} className="h-8 w-8" title="Visualização em lista" aria-label="Visualização em lista" aria-pressed={viewMode === "list"} onClick={() => setViewMode("list")}><List /></Button></div><AddCandidateDialog onAdd={handleAddCandidate} /></div></div>
+      {currentPosition.candidates.length === 0 ? <div className="empty-panel"><div className="empty-ballot mb-6"><Vote className="h-9 w-9" strokeWidth={1.2} /></div><h3 className="text-lg font-semibold">Uma nova eleição começa aqui</h3><p className="mb-5 mt-2 max-w-xs text-sm leading-6 text-muted-foreground">Nenhum candidato cadastrado para {currentPosition.name}.</p><AddCandidateDialog onAdd={handleAddCandidate} /></div> : viewMode === "grid" ? <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">{currentPosition.candidates.map(c => <VoteCard key={c.id} name={c.name} votes={c.votes} onAddVote={() => handleAddVote(c.id)} onRemoveVote={() => handleRemoveVote(c.id)} onDelete={() => handleDeleteCandidate(c.id)} onEdit={name => handleEditCandidate(c.id, name)} />)}</div> : <VoteList key={currentPosition.id} candidates={currentPosition.candidates} onAddVote={handleAddVote} onRemoveVote={handleRemoveVote} onDelete={handleDeleteCandidate} onEdit={handleEditCandidate} />}
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3"><span className="flex items-center gap-1.5 text-xs text-muted-foreground"><Info className="h-3.5 w-3.5" />Dados desta sessão · exporte antes de sair</span><AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="sm" disabled={totalVotes === 0} className="text-muted-foreground hover:text-destructive"><RotateCcw />Zerar votação</Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Zerar votos de {currentPosition.name}?</AlertDialogTitle><AlertDialogDescription>Todos os {totalVotes} votos deste cargo serão zerados. Os candidatos e os demais cargos serão mantidos. Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={handleReset}>Zerar votos</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></div></section><div className="lg:sticky lg:top-6"><RankingList candidates={currentPosition.candidates} /><div className="mt-4 flex items-center gap-3 px-1 text-xs leading-5 text-muted-foreground"><ShieldCheck className="h-5 w-5 shrink-0 text-primary" /><p>Decisões com clareza.<br />Uma assembleia com transparência.</p></div></div></div>
+    </main><footer className="mt-auto border-t border-border bg-card"><div className="app-shell flex flex-wrap items-center justify-between gap-2 py-5 text-xs text-muted-foreground"><span>Sistema de votação transparente para assembleias</span><span className="flex items-center gap-2">Feito para decidir em comunhão<ArrowRight className="h-3 w-3 text-primary" /></span></div></footer>
+  </div>;
 };
-
 export default Index;

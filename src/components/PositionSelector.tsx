@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Pencil } from "lucide-react";
+import { Plus, Ellipsis } from "lucide-react";
 import { Position } from "@/types/election";
 interface PositionSelectorProps { positions: Position[]; currentPosition: Position; onSelectPosition: (id: string) => void; onAddPosition: (name: string) => void; onEditPosition: (id: string, name: string) => void; }
 export const PositionSelector = ({ positions, currentPosition, onSelectPosition, onAddPosition, onEditPosition }: PositionSelectorProps) => {

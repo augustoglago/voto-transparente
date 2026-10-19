@@ -1,4 +1,4 @@
 # Atualização da assembleia
-- [ ] Modernizar a interface, mantendo laranja e modo escuro preto.
-- [ ] Revisar controles, edição, empates, lista vazia e PDF.
-- [ ] Verificar a votação completa no navegador.
+- [x] Modernizar a interface, mantendo laranja e modo escuro preto.
+- [x] Revisar controles, edição, empates, lista vazia e PDF.
+- [x] Verificar a votação completa no navegador.
